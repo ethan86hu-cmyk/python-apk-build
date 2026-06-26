@@ -25,28 +25,29 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5.1.1
       with:
-        python-version: '3.11'
+        python-version: '3.10' # 🌟 特效药一：将云端 Python 稍微降到最稳的 3.10，彻底避开 3.11 的编译 Bug
 
-    - name: Install Buildozer and Cython
+    - name: Install Stable Buildozer & Cython
       run: |
         pip install --upgrade pip
-        pip install buildozer cython git+https://github.com/kivy/plyer.git
+        # 🌟 特效药二：死锁最兼容的编译组件版本，防止 C 语言报错
+        pip install "cython<3.0.0"
+        pip install git+https://github.com/kivy/buildozer.git@master
+        pip install git+https://github.com/kivy/python-for-android.git@master
 
-    # 🌟 【核心补丁】一键修复 Aidl not found 报错
-    - name: Pre-install Android Platform Tools (Fix AIDL Error)
+    - name: Pre-install Android Platform Tools (Fix AIDL)
       run: |
-        echo "📥 正在云端强制预装 Android SDK 平台工具链与 AIDL 核心..."
-        sudo apt-get install -y google-android-build-tools-30.0.3-installer || true
         sudo apt-get install -y android-sdk-platform-tools aapt aidl
-        
-        # 建立全局物理软链接，强制 Buildozer 无论怎么找都能找到 aidl
         sudo ln -sf /usr/bin/aidl /usr/local/bin/aidl
         sudo ln -sf /usr/bin/aapt /usr/local/bin/aapt
-        echo "✅ AIDL 物理软链接注入成功！"
 
-    - name: Build with Buildozer
+    - name: Build with Buildozer (Force Accept Licenses)
       run: |
-        # 第一次编译时，加入 --profile 打印最全日志，并强制自动接受所有谷歌许可协议
+        # 🌟 特效药三：在物理运行编译前，强行在云端建立 Android 许可目录并自动授权
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        
+        # 核心绝杀：用连续的 yes 信号物理轰炸，强行通过所有谷歌 NDK/SDK 协议硬关卡
         yes | buildozer -v android debug
       env:
         JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
