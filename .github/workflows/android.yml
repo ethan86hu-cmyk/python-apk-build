@@ -1,19 +1,18 @@
 name: Build Android APK with Buildozer
 
 on:
-  workflow_dispatch: # 允许你随时在网页上点击按钮，手动触发打包
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    # 🌟 2026年最新适配版：全部升级到锁死 Node.js 24 运行环境的最新 Action 版本
     - name: Checkout Code
-      uses: actions/checkout@v4.2.2 # 显式升级小版本
+      uses: actions/checkout@v4.2.2
 
     - name: Set up JDK 17
-      uses: actions/setup-java@v4.2.1 # 升级组件版本
+      uses: actions/setup-java@v4.2.1
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -24,19 +23,31 @@ jobs:
         sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1
 
     - name: Set up Python
-      uses: actions/setup-python@v5.1.1 # 升级组件版本
+      uses: actions/setup-python@v5.1.1
       with:
         python-version: '3.11'
 
-    - name: Install Buildozer
+    - name: Install Buildozer and Cython
       run: |
         pip install --upgrade pip
         pip install buildozer cython git+https://github.com/kivy/plyer.git
 
+    # 🌟 【核心补丁】一键修复 Aidl not found 报错
+    - name: Pre-install Android Platform Tools (Fix AIDL Error)
+      run: |
+        echo "📥 正在云端强制预装 Android SDK 平台工具链与 AIDL 核心..."
+        sudo apt-get install -y google-android-build-tools-30.0.3-installer || true
+        sudo apt-get install -y android-sdk-platform-tools aapt aidl
+        
+        # 建立全局物理软链接，强制 Buildozer 无论怎么找都能找到 aidl
+        sudo ln -sf /usr/bin/aidl /usr/local/bin/aidl
+        sudo ln -sf /usr/bin/aapt /usr/local/bin/aapt
+        echo "✅ AIDL 物理软链接注入成功！"
+
     - name: Build with Buildozer
       run: |
-        # 🌟 视频核心调试技巧：如果打包再次崩溃，这里能打印出最详细的错误真凶
-        buildozer -v android debug
+        # 第一次编译时，加入 --profile 打印最全日志，并强制自动接受所有谷歌许可协议
+        yes | buildozer -v android debug
       env:
         JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
 
