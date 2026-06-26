@@ -5,22 +5,29 @@ on:
 
 jobs:
   build:
+    # 🌟 核心突破：让整个打包任务直接在 Kivy 官方亲自维护的 Buildozer 纯净 Docker 容器中运行
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
 
     steps:
+    # 第一步：把你的 Python 代码拉取到容器中
     - name: Checkout Code
       uses: actions/checkout@v4.2.2
 
-    # 🌟 终极绝杀：直接调用 Kivy 官方维护的 Buildozer 容器化 Action
-    # 该容器内部已经死锁了最完美的 JDK、NDK、libtool、Aidl 等全套环境，无视宿主机任何污染
-    - name: Build APK with Buildozer Action
-      uses: ArtemSaves/action-buildozer@v1.3.0
-      with:
-        # 自动使用项目根目录下的 buildozer.spec
-        buildozer_version: master
-        # 如果需要更详细的日志，可以在这里看
-        command: buildozer -v android debug
+    # 第二步：由于官方容器已经帮我们把 JDK、NDK、SDK、Libtool、Aidl 全部配好了
+    # 我们只需要在容器里直接高歌猛进，一行命令开始总攻
+    - name: Build with Buildozer (Official Container)
+      run: |
+        echo "🚀 正在官方正统 Kivy/Buildozer 容器内部启动编译..."
+        # 建立谷歌许可配置，防止偶发性由于权限卡死
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        
+        # 自动接受所有谷歌许可协议，并一键编译
+        yes | buildozer -v android debug
 
+    # 第三步：把打包好的 APK 扔出来供你下载
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
