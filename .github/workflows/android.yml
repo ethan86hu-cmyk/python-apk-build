@@ -20,17 +20,17 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1
+        # 🌟 绝杀补丁：物理补全 libtool、m4、autoconf，彻底解决 LT_SYS_SYMBOL_USCORE 宏丢失导致的编译死锁
+        sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1 m4 libtool-bin
 
     - name: Set up Python
       uses: actions/setup-python@v5.1.1
       with:
-        python-version: '3.10' # 🌟 特效药一：将云端 Python 稍微降到最稳的 3.10，彻底避开 3.11 的编译 Bug
+        python-version: '3.10' # 保持最稳的 3.10 跨平台底座
 
     - name: Install Stable Buildozer & Cython
       run: |
         pip install --upgrade pip
-        # 🌟 特效药二：死锁最兼容的编译组件版本，防止 C 语言报错
         pip install "cython<3.0.0"
         pip install git+https://github.com/kivy/buildozer.git@master
         pip install git+https://github.com/kivy/python-for-android.git@master
@@ -43,11 +43,10 @@ jobs:
 
     - name: Build with Buildozer (Force Accept Licenses)
       run: |
-        # 🌟 特效药三：在物理运行编译前，强行在云端建立 Android 许可目录并自动授权
         mkdir -p ~/.android
         touch ~/.android/repositories.cfg
         
-        # 核心绝杀：用连续的 yes 信号物理轰炸，强行通过所有谷歌 NDK/SDK 协议硬关卡
+        # 连续 yes 信号物理轰炸，强行通过所有谷歌 NDK/SDK 协议
         yes | buildozer -v android debug
       env:
         JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
