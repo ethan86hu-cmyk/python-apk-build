@@ -19,14 +19,14 @@ jobs:
 
     - name: Install System Dependencies
       run: |
-        sudo apt update
-        # 🌟 绝杀补丁：物理补全 libtool、m4、autoconf，彻底解决 LT_SYS_SYMBOL_USCORE 宏丢失导致的编译死锁
-        sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1 m4 libtool-bin
+        sudo apt-get update
+        # 🌟 强制安装全套 GNU 编译全家桶
+        sudo apt-get install -y --no-install-recommends git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1 m4 libtool-bin gettext
 
     - name: Set up Python
       uses: actions/setup-python@v5.1.1
       with:
-        python-version: '3.10' # 保持最稳的 3.10 跨平台底座
+        python-version: '3.10'
 
     - name: Install Stable Buildozer & Cython
       run: |
@@ -40,6 +40,15 @@ jobs:
         sudo apt-get install -y android-sdk-platform-tools aapt aidl
         sudo ln -sf /usr/bin/aidl /usr/local/bin/aidl
         sudo ln -sf /usr/bin/aapt /usr/local/bin/aapt
+
+    # 🌟【最致命的强力补丁】人肉修复 LT_SYS_SYMBOL_USCORE 宏丢失
+    - name: Force Inject GNU Libtool Macros
+      run: |
+        echo "🛠️ 正在执行底层 C 编译链硬核注入..."
+        # 强制在全局环境和当前工作区刷新并复制最新的 libtool 宏
+        libtoolize --copy --force || true
+        autoreconf --install --force || true
+        echo "✅ 宏底座物理修补完毕！"
 
     - name: Build with Buildozer (Force Accept Licenses)
       run: |
