@@ -1,0 +1,47 @@
+name: Build Android APK with Buildozer
+
+on:
+  workflow_dispatch: # 允许你随时在网页上点击按钮，手动触发打包
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Install System Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libssl-dev cmake libffi-dev libgomp1
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Buildozer
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython git+https://github.com/kivy/plyer.git
+
+    - name: Build with Buildozer
+      run: |
+        # 使用 buildozer 自动在云端下载 Android SDK/NDK 并编译成 APK
+        buildozer -v android debug
+      env:
+        # 强制指定云端 Java 路径，防止 Gradle 报错
+        JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: my-python-android-apk
+        path: bin/*.apk
